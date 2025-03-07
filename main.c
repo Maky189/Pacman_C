@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <string.h>
+#include <SOIL/SOIL.h>
 
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 600;
@@ -41,6 +42,7 @@ void checkCompileErrors(GLuint shader, const char *type) {
         }
     }
 }
+
 
 int main(void) {
     if (!glfwInit()) {
