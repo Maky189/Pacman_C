@@ -1,9 +1,11 @@
+#define GLFW_INCLUDE_NONE
 #include <stdio.h>
 #include <stdlib.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <string.h>
 #include <SOIL/SOIL.h>
+#include "Pacman.h"
 
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 600;
@@ -43,6 +45,15 @@ void checkCompileErrors(GLuint shader, const char *type) {
     }
 }
 
+// Variables and functions for the game
+Pacman *pac;
+Scenario *scen;
+Phantom *ph[4];
+int begin = 0;
+
+void drawGame();
+void beginGame();
+void endGame();
 
 int main(void) {
     if (!glfwInit()) {
@@ -69,64 +80,34 @@ int main(void) {
 
     glViewport(0, 0, WIDTH, HEIGHT);
 
-    /* Triangle vertices */
-    float vertices[] = {
-         0.0f,  0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f
-    };
-
-    GLuint VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    checkCompileErrors(vertexShader, "VERTEX");
-
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    checkCompileErrors(fragmentShader, "FRAGMENT");
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    checkCompileErrors(shaderProgram, "PROGRAM");
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, 1);
 
         glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        //Make game
+        drawGame();
+        beginGame();
+        endGame();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
+}
+
+void drawGame() {
+    // Implement drawGame function here
+}
+
+void beginGame() {
+    // Implement beginGame function here
+}
+
+void endGame() {
+    // Implement endGame function here
 }
