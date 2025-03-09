@@ -1,5 +1,6 @@
 #define GLFW_INCLUDE_NONE
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -258,6 +259,27 @@ static int scenario_IsTurn(int x, int y, Scenario* scen) {
     }else return 0;
 }
 
+// Function that checks if is possible to go in a given direction
+static int scenario_CheckDirection(int mat[N][N], int y, int x, int direction)
+{
+    int xt = x;
+    int yt = y;
+    while(mat[yt + directions[direction].y][xt + directions[direction].x] == 0)
+    {
+        yt = yt + directions[direction].y;
+        xt = xt + directions[direction].x;
+    }
+
+    if(mat[yt + directions[direction].y][xt + directions[direction].x] < 0)
+    {
+        return -1;
+    }
+    else
+    {
+        return mat[yt + directions[direction].y][xt + directions[direction].x] - 1;
+    }
+}
+
 // Given a scenario, builds the graph that will help the ghosts to
 // come back to the begining point
 static void scenario_buildGraph(Scenario* scen)
@@ -318,7 +340,7 @@ static void scenario_buildGraph(Scenario* scen)
 
 static int pacman_is_invencible(Pacman *pac);
 static void pacman_dies(Pacman *pac);
-static void pacman_points_ghosts(Pacman *pac);
+static void pacman_scores_ghosts(Pacman *pac);
 static void pacman_deathanimation(float column, float line, Pacman *pac);
 
 //Functions that begins pacman's data
@@ -362,7 +384,7 @@ int pacman_alive(Pacman *pac)
 }
 
 //Function that verifies if pacman can go to a certain direction chosen
-void pacman_ChangeDirection(Pacman *pac, int direction, Scenario *scen)
+void pacman_ChangeDirections(Pacman *pac, int direction, Scenario *scen)
 {
     if(scen->map[pac->y + directions[direction].y][pac->x + directions[direction].x] <=2)
     {
@@ -616,7 +638,7 @@ void phantom_moving(Phantom *ph, Scenario *scen, Pacman *pac)
             if(pacman_is_invencible(pac))
             {
                 ph->status = 1; //he is dead kkkk
-                pacman_points_ghosts(pac);
+                pacman_scores_ghosts(pac);
                 ph->begin_turn = 0;
             }
             else
@@ -682,7 +704,7 @@ static void phantom_move(Phantom *ph, int direction, Scenario *scen)
 }
 
 // Function that helps to chose the path when the phantom dies
-static int phantom_Direction_Graph(Phantom *ph, Scenario *scen)
+static int phantom_DirectionGraph(Phantom *ph, Scenario *scen)
 {
     if(scen->graph[ph->actual_index].x == scen->graph[ph->path[ph->actual_index]].x)
     {
@@ -926,7 +948,7 @@ static int phantom_MovingPhantomDead(Phantom *ph, Scenario *scen)
             ph->begin_turn = 1;
             phantom_SearchBestPath(ph, scen);
             ph->decided_turn = 1;
-            d = phantom_Direction_Graph(ph, scen);
+            d = phantom_DirectionGraph(ph, scen);
         }
         else
         {

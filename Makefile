@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -I. -I/usr/include -L/usr/lib -lglfw -ldl -lGL -lm
-SRC = main.c glad.c
+SRC = main.c glad.c Pacman.c
 OBJ = $(SRC:.c=.o)
 EXEC = main
 

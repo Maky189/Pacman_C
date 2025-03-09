@@ -22,5 +22,5 @@ void pacman_moving(Pacman *pac, Scenario *scen);
 //Functions for the Phantoms
 Phantom* phantom_create(int x, int y);
 void phantom_destroy(Phantom *ph);
-void phatom_moving(Phantom *ph, Scenario *scen, Pacman *pac);
+void phantom_moving(Phantom *ph, Scenario *scen, Pacman *pac);
 void phantom_draw(Phantom *ph);

@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <string.h>
 #include <SOIL/SOIL.h>
+#include <time.h>
 #include "Pacman.h"
 
 const unsigned int WIDTH = 800;
@@ -54,6 +55,8 @@ int begin = 0;
 void drawGame();
 void beginGame();
 void endGame();
+void loadTextures();
+void processInput(GLFWwindow *window);
 
 int main(void) {
     if (!glfwInit()) {
@@ -80,34 +83,86 @@ int main(void) {
 
     glViewport(0, 0, WIDTH, HEIGHT);
 
-    while (!glfwWindowShouldClose(window)) {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, 1);
+    // Initialize the game
+    beginGame();
 
+    while (!glfwWindowShouldClose(window)) {
+        // Process input
+        processInput(window);
+
+        // Render
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        //Make game
+        // Draw the game
         drawGame();
-        beginGame();
-        endGame();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    // Terminate the game
+    endGame();
 
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
 }
 
+void processInput(GLFWwindow *window) {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, 1);
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        pacman_ChangeDirections(pac, 0, scen);
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        pacman_ChangeDirections(pac, 1, scen);
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        pacman_ChangeDirection(pac, 2, scen);
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        pacman_ChangeDirection(pac, 3, scen);
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+        if (begin == 2) {
+            endGame();
+            beginGame();
+        }
+        begin = 1;
+    }
+}
+
 void drawGame() {
-    // Implement drawGame function here
+    scenario_draw(scen);
+    if (begin == 0) {
+        draw_Window(0);
+        return;
+    }
+
+    if (pacman_alive(pac)) {
+        pacman_moving(pac, scen);
+        pacman_draw(pac);
+        for (int i = 0; i < 4; i++) {
+            phantom_moving(ph[i], scen, pac);
+            phantom_draw(ph[i]);
+        }
+    } else {
+        draw_Window(1);
+        begin = 2;
+    }
 }
 
 void beginGame() {
-    // Implement beginGame function here
+    srand(time(NULL));
+    scen = scenario_load("mapa.txt");
+    pac = pacman_create(9, 11);
+    for (int i = 0; i < 4; i++)
+        ph[i] = phantom_create(9, 9);
+
+    begin = 0;
 }
 
 void endGame() {
-    // Implement endGame function here
+    for (int i = 0; i < 4; i++)
+        phantom_destroy(ph[i]);
+
+    pacman_destroy(pac);
+    scenario_destroy(scen);
 }
