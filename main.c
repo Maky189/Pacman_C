@@ -117,7 +117,7 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         pacman_ChangeDirections(pac, 1, scen);
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        pacman_ChangeDirection(pac, 2, scen);
+        pacman_ChangeDirections(pac, 2, scen);
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
         pacman_ChangeDirection(pac, 3, scen);
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
