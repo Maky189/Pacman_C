@@ -314,4 +314,210 @@ static void scenario_buildGraph(Scenario* scen)
 }
 
 
-// NEXT PACMAN FUNCTIONS
+// Pacman functions
+
+static int pacman_is_invencible(Pacman *pac);
+static void pacman_dies(Pacman *pac);
+static void pacman_points_ghosts(Pacman *pac);
+static void pacman_deathanimation(float column, float line, Pacman *pac);
+
+//Functions that begins pacman's data
+Pacman* pacman_create(int x, int y)
+{
+    Pacman* pac = malloc(sizeof(Pacman));
+    if (pac != NULL)
+    {
+        pac->invencible = 0;
+        pac->score = 0;
+        pac->step = 4;
+        pac->alive = 1;
+        pac->status = 0;
+        pac->direction = 0;
+        pac->partial = 0;
+        pac->xi = x;
+        pac->yi = y;
+        pac->x = x;
+        pac->y = y;
+    }
+    return pac;
+}
+
+// Functions that free all data related to Pacman
+int pacman_destroy(Pacman *pac)
+{
+    free(pac);
+}
+
+// Function that verifies if pacman is alive or not
+int pacman_alive(Pacman *pac)
+{
+    if (pac->alive)
+    {
+        return 1;
+    }
+    else
+    {
+        if (pac->animation > 60){return 0;}else{return 1;}
+    }
+}
+
+//Function that verifies if pacman can go to a certain direction chosen
+void pacman_ChangeDirection(Pacman *pac, int direction, Scenario *scen)
+{
+    if(scen->map[pac->y + directions[direction].y][pac->x + directions[direction].x] <=2)
+    {
+        int di = abs(direction - pac->direction);
+        if(di != 2 && di != 0)
+        {
+            pac->partial = 0;
+        }
+        pac->direction = direction;
+    }
+}
+
+// Make the pacman move
+void pacman_moving(Pacman *pac, Scenario *scen)
+{
+    if(pac->alive == 0)
+    {
+        return;
+    }
+
+    // Changes his position inside a square in the matrix or changes squares
+    if(scen->map[pac->y + directions[pac->direction].y][pac->x + directions[pac->direction].x] <=2)
+    {
+        if(pac->direction < 2)
+        {
+            pac->partial += pac->step;
+            if(pac->partial >= block)
+            {
+                pac->x += directions[pac->direction].x;
+                pac->y += directions[pac->direction].y;
+                pac->partial = 0;
+            }
+        }
+        else
+        {
+            pac->partial -= pac->step;
+            if(pac->partial <= -block)
+            {
+                pac->x += directions[pac->direction].x;
+                pac->y += directions[pac->direction].y;
+                pac->partial = 0;
+            }
+        }
+    }
+
+    //Eats a point in the map
+    if(scen->map[pac->y][pac->x] == 1)
+    {
+        pac->score += 10;
+        scen->number_p--;
+    }
+    if(scen->map[pac->y][pac->x] == 2)
+    {
+        pac->score += 50;
+        pac->invencible = 1000;
+        scen->number_p--;
+    }
+    //Removes the eaten point from the map
+    scen->map[pac->y][pac->x] == 0;
+}
+
+// Functions that draws pacman
+void pacman_draw(Pacman *pac)
+{
+    float line, column;
+    float step = (pac->partial/(float)block);
+    //Checks position
+    if(pac->direction == 0 || pac->direction == 2)
+    {
+        line = pac->y;
+        column = pac->x + step;
+    }
+    else
+    {
+        line = pac->y + step;
+        column = pac->x;
+    }
+
+    if(pac->alive)
+    {
+        // Chose the sprite based on the direction
+        int idx = 2*pac->direction;
+
+        // Chose if draws with open or closed mouth
+        if(pac->status < 15)
+        {
+            drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[idx]);
+        }
+        else
+        {
+            drawSprite(MAT2X(column),MAT2Y(line), pacmanTex2d[idx+1]);
+        }
+
+        // Alternates between open and closed mouth
+        pac->status = (pac->status+1) % 30;
+
+        if(pac->invencible > 0)
+        {
+            pac->invencible--;
+        }
+        else
+        {
+            // Shows death animation
+            pacman_deathanimation(column,line,pac);
+        }
+    }
+}
+
+static int pacman_is_invencible(Pacman *pac)
+{
+    return pac->invencible > 0;
+}
+
+static void pacman_dies(Pacman *pac)
+{
+    if(pac->alive)
+    {
+        pac->alive = 0;
+        pac->animation = 0;
+    }
+}
+
+static void pacman_scores_ghosts(Pacman *pac)
+{
+    pac->score += 100;
+}
+
+static void pacman_deathanimation(float column, float line, Pacman *pac)
+{
+    pac->animation++;
+    // Checks wich ones of the sprites should be draw to give the efect of 
+    //pacman slowly fadding away
+    if(pac->animation < 15)
+    {
+        drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[8]);
+    }
+    else
+    {
+        if(pac->animation < 30)
+        {
+            drawSprite(MAT2X(column),MAT2Y(line), pacmanTex2d[9]);
+        }
+        else
+        {
+            if(pac->animation < 45)
+            {
+                drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[10]);
+            }
+            else
+            {
+                drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[11]);
+            }
+        }
+    }
+}
+
+
+// NEXT IS PHANTOM
