@@ -1,7 +1,7 @@
 #define GLFW_INCLUDE_NONE
 #include <stdio.h>
 #include <stdlib.h>
-#include <glad/glad.h>
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <string.h>
 #include <SOIL/SOIL.h>
@@ -39,32 +39,86 @@ void beginGame();
 void endGame();
 void loadTextures();
 void processInput(GLFWwindow *window);
-void initOpenGL();
+void drawTypeScreen(float x, float y, float size, GLuint tex) {
+    glColor3f(1.0, 1.0, 1.0);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(x - size, y + size);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(x + size, y + size);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(x + size, y - size);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(x - size, y - size);
+    glEnd();
+
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
+}
+
+void initOpenGL() {
+    // Basic OpenGL initialization
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    
+    // Set up viewport
+    glViewport(0, 0, WIDTH, HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
+void draw_Window(int type) {
+    // Draw start or game over screen based on type
+    if (type == 0) {
+        drawTypeScreen(0, 0, 1.0, startscreen);
+    } else {
+        drawTypeScreen(0, 0, 1.0, screenGameOver);
+    }
+}
 
 int main(void) {
     if (!glfwInit()) {
-        printf("Failed to initialize GLFW\n");
+        fprintf(stderr, "Failed to initialize GLFW\n");
         return -1;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // Set OpenGL version to 1.1
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Pacman", NULL, NULL);
     if (!window) {
-        printf("Failed to create GLFW window\n");
+        fprintf(stderr, "Failed to create GLFW window\n");
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        printf("Failed to initialize GLAD\n");
+    // Load OpenGL 1.1 functions
+    if (!gladLoadGL()) {
+        fprintf(stderr, "Failed to initialize GLAD\n");
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return -1;
     }
-
-    glViewport(0, 0, WIDTH, HEIGHT);
+    
+    // Verify OpenGL version
+    const GLubyte* version = glGetString(GL_VERSION);
+    if (!version) {
+        fprintf(stderr, "Failed to get OpenGL version\n");
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return -1;
+    }
+    printf("OpenGL Version: %s\n", version);
 
     // Initialize OpenGL
     initOpenGL();
@@ -164,8 +218,8 @@ void beginGame() {
         printf("Creating phantom %d at position (9, 9)\n", i);
         ph[i] = phantom_create(9, 9);
         if (ph[i] == NULL) {
-            printf("Error creating phantom %d\n", i);
-            exit(1);
+        printf("Error creating phantom %d\n", i);
+        exit(1);
         }
     }
     begin = 0;
