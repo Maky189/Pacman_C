@@ -2,8 +2,10 @@
 typedef struct TPacman Pacman;
 typedef struct TPhantom Phantom;
 typedef struct TScenario Scenario;
+#define N 20 // Add this definition
 
 void loadTextures();
+void initOpenGL(); // Add this declaration
 
 //Functions for the scenario
 Scenario* scenario_load(char *archive);

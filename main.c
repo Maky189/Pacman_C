@@ -11,23 +11,6 @@
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 600;
 
-/* Vertex Shader source code */
-const char *vertexShaderSource =
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main() {\n"
-    "   gl_Position = vec4(aPos, 1.0);\n"
-    "}\0";
-
-/* Fragment Shader source code */
-const char *fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main() {\n"
-    "   FragColor = vec4(1.0, 0.5, 0.2, 1.0);\n"
-    "}\0";
-
-/* Function to check shader compilation errors */
 void checkCompileErrors(GLuint shader, const char *type) {
     int success;
     char infoLog[512];
@@ -46,10 +29,9 @@ void checkCompileErrors(GLuint shader, const char *type) {
     }
 }
 
-// Variables and functions for the game
-Pacman *pac;
-Scenario *scen;
-Phantom *ph[4];
+Pacman *pac = NULL;
+Scenario *scen = NULL;
+Phantom *ph[4] = {NULL, NULL, NULL, NULL};
 int begin = 0;
 
 void drawGame();
@@ -57,6 +39,7 @@ void beginGame();
 void endGame();
 void loadTextures();
 void processInput(GLFWwindow *window);
+void initOpenGL();
 
 int main(void) {
     if (!glfwInit()) {
@@ -83,6 +66,12 @@ int main(void) {
 
     glViewport(0, 0, WIDTH, HEIGHT);
 
+    // Initialize OpenGL
+    initOpenGL();
+
+    // Load textures
+    loadTextures();
+
     // Initialize the game
     beginGame();
 
@@ -91,7 +80,7 @@ int main(void) {
         processInput(window);
 
         // Render
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Draw the game
@@ -119,7 +108,7 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         pacman_ChangeDirections(pac, 2, scen);
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        pacman_ChangeDirection(pac, 3, scen);
+        pacman_ChangeDirections(pac, 3, scen);
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
         if (begin == 2) {
             endGame();
@@ -130,18 +119,27 @@ void processInput(GLFWwindow *window) {
 }
 
 void drawGame() {
+    if (scen == NULL) {
+        printf("Scenario is NULL\n");
+        return;
+    }
     scenario_draw(scen);
     if (begin == 0) {
         draw_Window(0);
         return;
     }
-
     if (pacman_alive(pac)) {
+        printf("Pacman is alive and ready to play!\n");
         pacman_moving(pac, scen);
         pacman_draw(pac);
         for (int i = 0; i < 4; i++) {
-            phantom_moving(ph[i], scen, pac);
-            phantom_draw(ph[i]);
+            if (ph[i] != NULL) {
+                printf("Phantom %d is on the move!\n", i);
+                phantom_moving(ph[i], scen, pac);
+                phantom_draw(ph[i]);
+            } else {
+                printf("Phantom %d is NULL\n", i);
+            }
         }
     } else {
         draw_Window(1);
@@ -151,18 +149,42 @@ void drawGame() {
 
 void beginGame() {
     srand(time(NULL));
-    scen = scenario_load("mapa.txt");
+    scen = scenario_load("map.txt");
+    if (scen == NULL) {
+        printf("Failed to load the game scenario. Please check the map file.\n");
+        exit(1);
+    }
     pac = pacman_create(9, 11);
-    for (int i = 0; i < 4; i++)
+    printf("Pacman created at position (9, 11)\n");
+    if (pac == NULL) {
+        printf("Error creating Pacman\n");
+        exit(1);
+    }
+    for (int i = 0; i < 4; i++) {
+        printf("Creating phantom %d at position (9, 9)\n", i);
         ph[i] = phantom_create(9, 9);
-
+        if (ph[i] == NULL) {
+            printf("Error creating phantom %d\n", i);
+            exit(1);
+        }
+    }
     begin = 0;
 }
 
 void endGame() {
-    for (int i = 0; i < 4; i++)
-        phantom_destroy(ph[i]);
-
-    pacman_destroy(pac);
-    scenario_destroy(scen);
+    for (int i = 0; i < 4; i++) {
+        if (ph[i] != NULL) {
+            phantom_destroy(ph[i]);
+            ph[i] = NULL;
+        }
+    }
+    if (pac != NULL) {
+        printf("Pacman is alive\n");
+        pacman_destroy(pac);
+        pac = NULL;
+    }
+    if (scen != NULL) {
+        scenario_destroy(scen);
+        scen = NULL;
+    }
 }
