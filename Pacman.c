@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#include <glad/glad.h>
+#include <GL/gl.h>
 #include <GLFW/glfw3.h>
 #include <SOIL/SOIL.h>
 #include "Pacman.h"
@@ -13,7 +13,7 @@
 #define N 20
 //Size of each block of the table in the window
 #define TAM 0.1f
-//Fucntions that convert the line and column of the table in a coordenate
+//Functions that convert the line and column of the table in a coordinate
 #define MAT2X(j) ((j)*0.1f-1)
 #define MAT2Y(i) (0.9-(i)*0.1f)
 
@@ -55,7 +55,7 @@ struct TScenario {
     struct TVertex *graph;
 };
 
-//Texturas
+// Textures
 GLuint pacmanTex2d[12];
 GLuint phantomTex2d[12];
 GLuint mapTex2d[14];
@@ -64,9 +64,9 @@ GLuint startscreen, screenGameOver;
 
 static void drawSprite(float column, float line, GLuint tex);
 static GLuint loadArqTexture(char *str);
-static void drawTypeScreen(float x, float y, float size, GLuint tex);
+void drawTypeScreen(float x, float y, float size, GLuint tex);
 
-//Functions that loads all the textures in the game
+// Functions that load all the textures in the game
 void loadTextures() 
 {
     int i;
@@ -76,7 +76,6 @@ void loadTextures()
         sprintf(str, ".//Sprites//phantom%d.png", i);
         phantomTex2d[i] = loadArqTexture(str);
     }
-
 
     for (i = 0; i < 12; i++)
     {
@@ -96,7 +95,7 @@ void loadTextures()
 
 static GLuint loadArqTexture(char *str)
 {
-    // using soil (Simple OpenGl Image Loader)
+    // using soil (Simple OpenGL Image Loader)
     GLuint tex = SOIL_load_OGL_texture
         (
             str,
@@ -108,7 +107,7 @@ static GLuint loadArqTexture(char *str)
     
     if(0 == tex)
     {
-        printf("Erro no SOIL: %s\n", SOIL_last_result());
+        printf("Error in SOIL: %s\n", SOIL_last_result());
     }
 
     return tex;
@@ -168,33 +167,40 @@ void drawScreen(int type)
     }
 }
 
+// Scenario
 
-//Scenario
-
-static int scenario_IsTurn(int x, int y, Scenario* scen);
+static int scenario_IsTurn(int x, int y, struct TScenario* scen);
 static int scenario_CheckDirection(int mat[N][N], int y, int x, int direction);
-static void scenario_buildGraph(Scenario* scen);
+static void scenario_buildGraph(struct TScenario* scen);
 
-Scenario* scenario_load(char *archive)
+struct TScenario* scenario_load(char *archive)
 {
     int i, j;
 
     FILE *arq = fopen(archive, "r");
 
-    if (arq == NULL)
-    {
+    if (arq == NULL) {
         printf("Error loading scenario\n");
         exit(1);
     }
 
-    Scenario* scen = malloc(sizeof(Scenario));
+    struct TScenario* scen = malloc(sizeof(struct TScenario));
+    if (scen == NULL) {
+        fprintf(stderr, "Memory allocation failed for Scenario\n");
+        exit(1);
+    }
+    printf("Allocating memory for Scenario\n");
     scen->number_p = 0;
 
     for (i = 0; i < N; i++)
     {
         for (j = 0; j < N; j++)
         {
-            fscanf(arq, "%d", &scen->map[i][j]);
+            if (fscanf(arq, "%d", &scen->map[i][j]) != 1) {
+                fprintf(stderr, "Error reading map data\n");
+                free(scen); // Free allocated memory before exiting
+                exit(1);
+            }
             if (scen->map[i][j] == 1 || scen->map[i][j] == 2)
             {
                 scen->number_p++;
@@ -208,14 +214,14 @@ Scenario* scenario_load(char *archive)
 }
 
 // Free data from the scenario
-void scenario_destroy(Scenario* scen)
+void scenario_destroy(struct TScenario* scen)
 {
     free(scen->graph);
     free(scen);
 }
 
 // Goes through the matrix of the game drawing sprites
-void scenario_draw(Scenario* scen)
+void scenario_draw(struct TScenario* scen)
 {
     int i,j;
     for (i = 0; i < N; i++)
@@ -227,19 +233,19 @@ void scenario_draw(Scenario* scen)
     }
 }
 
-// Verifica se uma posição (x, y) no cenário é uma curva e não uma parede
-static int scenario_IsTurn(int x, int y, Scenario* scen) {
+// Verifies if a position (x, y) in the scenario is a turn and not a wall
+static int scenario_IsTurn(int x, int y, struct TScenario* scen) {
     int i, cont = 0;
     int v[4];
 
-    // Itera sobre as quatro direções possíveis (cima, baixo, esquerda, direita)
+    // Iterates over the four possible directions (up, down, left, right)
     for(i = 0; i < 4; i++) {
-        // Verifica se a posição adjacente na direção atual é um caminho válido (não uma parede)
+        // Checks if the adjacent position in the current direction is a valid path (not a wall)
         if (scen->map[y + directions[i].y][x + directions[i].x] <= 2) {
-            cont++;  // Incrementa o contador de caminhos válidos
-            v[i] = 1;  // Marca a direção como válida
+            cont++;  // Increment the valid path counter
+            v[i] = 1;  // Mark the direction as valid
         } else {
-            v[i] = 0;  // Marca a direção como inválida (parede)
+            v[i] = 0;  // Mark the direction as invalid (wall)
         }
     }
 
@@ -259,7 +265,7 @@ static int scenario_IsTurn(int x, int y, Scenario* scen) {
     }else return 0;
 }
 
-// Function that checks if is possible to go in a given direction
+// Function that checks if it is possible to go in a given direction
 static int scenario_CheckDirection(int mat[N][N], int y, int x, int direction)
 {
     int xt = x;
@@ -281,52 +287,56 @@ static int scenario_CheckDirection(int mat[N][N], int y, int x, int direction)
 }
 
 // Given a scenario, builds the graph that will help the ghosts to
-// come back to the begining point
-static void scenario_buildGraph(Scenario* scen)
+// come back to the beginning point
+static void scenario_buildGraph(struct TScenario* scen)
 {
     int mat[N][N];
     int i, j, k, idx, cont = 0;
 
-    for(i = 1; i < N-1;i++)
+    // Initialize the matrix with -1
+    for (i = 0; i < N; i++)
     {
-        for(j=1;j < N-1;j++)
+        for (j = 0; j < N; j++)
+        {
+            mat[i][j] = -1;
+        }
+    }
+
+    // Identify the vertices in the scenario
+    for (i = 1; i < N - 1; i++)
+    {
+        for (j = 1; j < N - 1; j++)
         {
             if (scen->map[i][j] <= 2)
             {
-                if(scenario_IsTurn(j,i,scen))
+                if (scenario_IsTurn(j, i, scen))
                 {
                     cont++;
                     mat[i][j] = cont;
-                }
-                else
-                {
-                    mat[i][j] = -1;
                 }
             }
         }
     }
 
-    for(i = 0; i < N; i++)
-    {
-        mat[0][i] = -1;
-        mat[i][0] = -1;
-        mat[N-1][i] = -1;
-        mat[i][N-1] = -1;
-    }
-
     scen->NV = cont;
     scen->graph = malloc(cont * sizeof(struct TVertex));
-
-    for (i = 1; i < N-1; i++)
+    if (scen->graph == NULL)
     {
-        for(j = 1; j < N-1; j++)
+        fprintf(stderr, "Memory allocation failed for graph\n");
+        exit(1);
+    }
+
+    // Build the graph
+    for (i = 1; i < N - 1; i++)
+    {
+        for (j = 1; j < N - 1; j++)
         {
-            if(mat[i][j] > 0)
+            if (mat[i][j] > 0)
             {
                 idx = mat[i][j] - 1;
                 scen->graph[idx].x = j;
                 scen->graph[idx].y = i;
-                for(k=0; k < 4; k++)
+                for (k = 0; k < 4; k++)
                 {
                     scen->graph[idx].neighbour[k] = scenario_CheckDirection(mat, i, j, k);
                 }
@@ -335,7 +345,6 @@ static void scenario_buildGraph(Scenario* scen)
     }
 }
 
-
 // Pacman functions
 
 static int pacman_is_invencible(Pacman *pac);
@@ -343,10 +352,15 @@ static void pacman_dies(Pacman *pac);
 static void pacman_scores_ghosts(Pacman *pac);
 static void pacman_deathanimation(float column, float line, Pacman *pac);
 
-//Functions that begins pacman's data
+// Functions that begin pacman's data
 Pacman* pacman_create(int x, int y)
 {
     Pacman* pac = malloc(sizeof(Pacman));
+    if (pac == NULL) {
+        fprintf(stderr, "Memory allocation failed for Pacman\n");
+        exit(1);
+    }
+    printf("Allocating memory for Pacman\n");
     if (pac != NULL)
     {
         pac->invencible = 0;
@@ -373,23 +387,21 @@ void pacman_destroy(Pacman *pac)
 // Function that verifies if pacman is alive or not
 int pacman_alive(Pacman *pac)
 {
-    if (pac->alive)
-    {
+    if (pac->alive) {
         return 1;
     }
     else
     {
-        if (pac->animation > 60){return 0;}else{return 1;}
+        if (pac->animation > 60) { return 0; } else { return 1; }
     }
 }
 
-//Function that verifies if pacman can go to a certain direction chosen
-void pacman_ChangeDirections(Pacman *pac, int direction, Scenario *scen)
+// Function that verifies if pacman can go to a certain direction chosen
+void pacman_ChangeDirections(Pacman *pac, int direction, struct TScenario *scen)
 {
-    if(scen->map[pac->y + directions[direction].y][pac->x + directions[direction].x] <=2)
-    {
+    if (scen->map[pac->y + directions[direction].y][pac->x + directions[direction].x] <= 2) {
         int di = abs(direction - pac->direction);
-        if(di != 2 && di != 0)
+        if (di != 2 && di != 0)
         {
             pac->partial = 0;
         }
@@ -398,20 +410,20 @@ void pacman_ChangeDirections(Pacman *pac, int direction, Scenario *scen)
 }
 
 // Make the pacman move
-void pacman_moving(Pacman *pac, Scenario *scen)
+void pacman_moving(Pacman *pac, struct TScenario *scen)
 {
-    if(pac->alive == 0)
+    if (pac->alive == 0)
     {
         return;
     }
 
     // Changes his position inside a square in the matrix or changes squares
-    if(scen->map[pac->y + directions[pac->direction].y][pac->x + directions[pac->direction].x] <=2)
+    if (scen->map[pac->y + directions[pac->direction].y][pac->x + directions[pac->direction].x] <= 2)
     {
-        if(pac->direction < 2)
+        if (pac->direction < 2)
         {
             pac->partial += pac->step;
-            if(pac->partial >= block)
+            if (pac->partial >= block)
             {
                 pac->x += directions[pac->direction].x;
                 pac->y += directions[pac->direction].y;
@@ -421,7 +433,7 @@ void pacman_moving(Pacman *pac, Scenario *scen)
         else
         {
             pac->partial -= pac->step;
-            if(pac->partial <= -block)
+            if (pac->partial <= -block)
             {
                 pac->x += directions[pac->direction].x;
                 pac->y += directions[pac->direction].y;
@@ -430,29 +442,27 @@ void pacman_moving(Pacman *pac, Scenario *scen)
         }
     }
 
-    //Eats a point in the map
-    if(scen->map[pac->y][pac->x] == 1)
+    // Eats a point in the map
+    if (scen->map[pac->y][pac->x] == 1)
     {
         pac->score += 10;
         scen->number_p--;
     }
-    if(scen->map[pac->y][pac->x] == 2)
+    if (scen->map[pac->y][pac->x] == 2)
     {
         pac->score += 50;
         pac->invencible = 1000;
         scen->number_p--;
     }
-    //Removes the eaten point from the map
-    scen->map[pac->y][pac->x] == 0;
 }
 
-// Functions that draws pacman
+// Functions that draw pacman
 void pacman_draw(Pacman *pac)
 {
     float line, column;
-    float step = (pac->partial/(float)block);
-    //Checks position
-    if(pac->direction == 0 || pac->direction == 2)
+    float step = (pac->partial / (float)block);
+    // Checks position
+    if (pac->direction == 0 || pac->direction == 2)
     {
         line = pac->y;
         column = pac->x + step;
@@ -463,32 +473,32 @@ void pacman_draw(Pacman *pac)
         column = pac->x;
     }
 
-    if(pac->alive)
+    if (pac->alive)
     {
-        // Chose the sprite based on the direction
-        int idx = 2*pac->direction;
+        // Choose the sprite based on the direction
+        int idx = 2 * pac->direction;
 
-        // Chose if draws with open or closed mouth
-        if(pac->status < 15)
+        // Choose if draws with open or closed mouth
+        if (pac->status < 15)
         {
             drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[idx]);
         }
         else
         {
-            drawSprite(MAT2X(column),MAT2Y(line), pacmanTex2d[idx+1]);
+            drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[idx + 1]);
         }
 
         // Alternates between open and closed mouth
-        pac->status = (pac->status+1) % 30;
+        pac->status = (pac->status + 1) % 30;
 
-        if(pac->invencible > 0)
+        if (pac->invencible > 0)
         {
             pac->invencible--;
         }
         else
         {
             // Shows death animation
-            pacman_deathanimation(column,line,pac);
+            pacman_deathanimation(column, line, pac);
         }
     }
 }
@@ -500,7 +510,7 @@ static int pacman_is_invencible(Pacman *pac)
 
 static void pacman_dies(Pacman *pac)
 {
-    if(pac->alive)
+    if (pac->alive)
     {
         pac->alive = 0;
         pac->animation = 0;
@@ -515,21 +525,21 @@ static void pacman_scores_ghosts(Pacman *pac)
 static void pacman_deathanimation(float column, float line, Pacman *pac)
 {
     pac->animation++;
-    // Checks wich ones of the sprites should be draw to give the efect of 
-    //pacman slowly fadding away
-    if(pac->animation < 15)
+    // Checks which ones of the sprites should be drawn to give the effect of 
+    // pacman slowly fading away
+    if (pac->animation < 15)
     {
         drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[8]);
     }
     else
     {
-        if(pac->animation < 30)
+        if (pac->animation < 30)
         {
-            drawSprite(MAT2X(column),MAT2Y(line), pacmanTex2d[9]);
+            drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[9]);
         }
         else
         {
-            if(pac->animation < 45)
+            if (pac->animation < 45)
             {
                 drawSprite(MAT2X(column), MAT2Y(line), pacmanTex2d[10]);
             }
@@ -541,22 +551,26 @@ static void pacman_deathanimation(float column, float line, Pacman *pac)
     }
 }
 
-
 // NEXT IS PHANTOM
-static void phantom_move(Phantom *ph, int direction, Scenario *scen);
-static int phantom_DirectionGraph(Phantom *ph, Scenario *scen);
-static int phantom_DistanceGraph(Scenario *scen, int noA, int noB);
-static int phantom_DrawsDirection(Phantom *ph, Scenario *scen);
-static int phantom_SeePacman(Phantom *ph, Pacman *pac, Scenario *scen, int direction);
-static void phantom_SearchBestPath(Phantom *ph, Scenario *scen);
-static int phantom_MovingPhantomAlive(Phantom *ph, Pacman *pac, Scenario *scen);
-static int phantom_MovingPhantomDead(Phantom *ph, Scenario *scen);
+static void phantom_move(Phantom *ph, int direction, struct TScenario *scen);
+static int phantom_DirectionGraph(Phantom *ph, struct TScenario *scen);
+static int phantom_DistanceGraph(struct TScenario *scen, int noA, int noB);
+static int phantom_DrawsDirection(Phantom *ph, struct TScenario *scen);
+static int phantom_SeePacman(Phantom *ph, Pacman *pac, struct TScenario *scen, int direction);
+static void phantom_SearchBestPath(Phantom *ph, struct TScenario *scen);
+static int phantom_MovingPhantomAlive(Phantom *ph, Pacman *pac, struct TScenario *scen);
+static int phantom_MovingPhantomDead(Phantom *ph, struct TScenario *scen);
 
 // Function that initializes the data from the phantom
 Phantom* phantom_create(int x, int y)
 {
     Phantom* ph = malloc(sizeof(Phantom));
-    if(ph != NULL)
+    if (ph == NULL) {
+        fprintf(stderr, "Memory allocation failed for Phantom\n");
+        exit(1);
+    }
+    printf("Allocating memory for Phantom\n");
+    if (ph != NULL)
     {
         ph->step = 3;
         ph->decided_turn = 0;
@@ -577,7 +591,7 @@ Phantom* phantom_create(int x, int y)
 // Function that liberates the data from the phantom
 void phantom_destroy(Phantom *ph)
 {
-    if(ph->path != NULL)
+    if (ph->path != NULL)
     {
         free(ph->path);
     }
@@ -588,10 +602,10 @@ void phantom_destroy(Phantom *ph)
 void phantom_draw(Phantom *ph)
 {
     float line, column;
-    float step = (ph->partial/(float)block);
+    float step = (ph->partial / (float)block);
 
-    //Check position
-    if(ph->direction == 0 || ph->direction == 2)
+    // Check position
+    if (ph->direction == 0 || ph->direction == 2)
     {
         line = ph->y;
         column = ph->x + step;
@@ -602,24 +616,24 @@ void phantom_draw(Phantom *ph)
         column = ph->x;
     }
 
-    // Chooses the sprite based on the direction and status(alive, dead, vulnerable)
-    int idx = 3*ph->direction + ph->status;
+    // Chooses the sprite based on the direction and status (alive, dead, vulnerable)
+    int idx = 3 * ph->direction + ph->status;
     drawSprite(MAT2X(column), MAT2Y(line), phantomTex2d[idx]);
 }
 
 // Updates the position of a phantom
-void phantom_moving(Phantom *ph, Scenario *scen, Pacman *pac)
+void phantom_moving(Phantom *ph, struct TScenario *scen, Pacman *pac)
 {
-    int d;
-    if(ph->status == 1)
+    int d = 0; // Initialize variable d
+    if (ph->status == 1)
     {
-        //If a phantom is dead, he commes back through the path of the graph
+        // If a phantom is dead, he comes back through the path of the graph
         d = phantom_MovingPhantomDead(ph, scen);
     }
     else
     {
-        //Run or persue Pacman? ? or 0
-        if(pacman_is_invencible(pac))
+        // Run or pursue Pacman? ? or 0
+        if (pacman_is_invencible(pac))
         {
             ph->status = 2;
         }
@@ -629,21 +643,21 @@ void phantom_moving(Phantom *ph, Scenario *scen, Pacman *pac)
         }
 
         // Calls the function that calculates the new direction to where the phantom
-        // should be movinng with base on the map and the position of pacman
+        // should be moving based on the map and the position of pacman
         d = phantom_MovingPhantomAlive(ph, pac, scen);
         
-        //What to do if touches pacman?
-        if(pac->x == ph->x && pac->y == ph->y)
+        // What to do if touches pacman?
+        if (pac->x == ph->x && pac->y == ph->y)
         {
-            if(pacman_is_invencible(pac))
+            if (pacman_is_invencible(pac))
             {
-                ph->status = 1; //he is dead kkkk
+                ph->status = 1; // he is dead
                 pacman_scores_ghosts(pac);
                 ph->begin_turn = 0;
             }
             else
             {
-                if(pacman_alive(pac))
+                if (pacman_alive(pac))
                 {
                     pacman_dies(pac);
                 }
@@ -655,20 +669,20 @@ void phantom_moving(Phantom *ph, Scenario *scen, Pacman *pac)
 }
 
 // Updates the position of a phantom
-static void phantom_move(Phantom *ph, int direction, Scenario *scen)
+static void phantom_move(Phantom *ph, int direction, struct TScenario *scen)
 {
     int xt = ph->x;
     int yt = ph->y;
 
-    //Increments the position inside of a square of the matrix or changes the square
-    if(scen->map[ph->y + directions[direction].y][ph->x + directions[direction].x] <= 2)
+    // Increments the position inside of a square of the matrix or changes the square
+    if (scen->map[ph->y + directions[direction].y][ph->x + directions[direction].x] <= 2)
     {
-        if(direction == ph->direction)
+        if (direction == ph->direction)
         {
-            if(ph->direction < 2)
+            if (ph->direction < 2)
             {
                 ph->partial += ph->step;
-                if(ph->partial >= block)
+                if (ph->partial >= block)
                 {
                     ph->x += directions[direction].x;
                     ph->y += directions[direction].y;
@@ -678,7 +692,7 @@ static void phantom_move(Phantom *ph, int direction, Scenario *scen)
             else
             {
                 ph->partial -= ph->step;
-                if(ph->partial <= -block)
+                if (ph->partial <= -block)
                 {
                     ph->x += directions[direction].x;
                     ph->y += directions[direction].y;
@@ -689,7 +703,7 @@ static void phantom_move(Phantom *ph, int direction, Scenario *scen)
         else
         {
             // Change direction...
-            if(abs(direction - ph->direction) != 2)
+            if (abs(direction - ph->direction) != 2)
             {
                 ph->partial = 0;
             }
@@ -697,18 +711,18 @@ static void phantom_move(Phantom *ph, int direction, Scenario *scen)
         }
     }
 
-    if(xt != ph->x || yt != ph->y)
+    if (xt != ph->x || yt != ph->y)
     {
         ph->decided_turn = 0;
     }
 }
 
-// Function that helps to chose the path when the phantom dies
-static int phantom_DirectionGraph(Phantom *ph, Scenario *scen)
+// Function that helps to choose the path when the phantom dies
+static int phantom_DirectionGraph(Phantom *ph, struct TScenario *scen)
 {
-    if(scen->graph[ph->actual_index].x == scen->graph[ph->path[ph->actual_index]].x)
+    if (scen->graph[ph->actual_index].x == scen->graph[ph->path[ph->actual_index]].x)
     {
-        if(scen->graph[ph->actual_index].y > scen->graph[ph->path[ph->actual_index]].y)
+        if (scen->graph[ph->actual_index].y > scen->graph[ph->path[ph->actual_index]].y)
         {
             return 3;
         }
@@ -719,7 +733,7 @@ static int phantom_DirectionGraph(Phantom *ph, Scenario *scen)
     }
     else
     {
-        if(scen->graph[ph->actual_index].x > scen->graph[ph->path[ph->actual_index]].x)
+        if (scen->graph[ph->actual_index].x > scen->graph[ph->path[ph->actual_index]].x)
         {
             return 2;
         }
@@ -730,20 +744,20 @@ static int phantom_DirectionGraph(Phantom *ph, Scenario *scen)
     }
 }
 
-// Function that helps in  choosing the path when the phantom dies
-static int phantom_DistanceGraph(Scenario *scen, int noA, int noB)
+// Function that helps in choosing the path when the phantom dies
+static int phantom_DistanceGraph(struct TScenario *scen, int noA, int noB)
 {
     return abs(scen->graph[noA].x - scen->graph[noB].x) + abs(scen->graph[noA].y - scen->graph[noB].y);
 }
 
 // When the phantom finds a turn, he draws a new direction
 // He tends to move forward, sometimes change directions and almost never go back the same path
-static int phantom_DrawsDirection(Phantom *ph, Scenario *scen)
+static int phantom_DrawsDirection(Phantom *ph, struct TScenario *scen)
 {
-    int i, j, k, max;
+    int i, j, k = 0, max; // Initialize k to avoid uninitialized warning
     int chances[4], dir[4];
 
-    for(i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
     {
         chances[i] = rand() % 10 + 1;
     }
@@ -752,12 +766,12 @@ static int phantom_DrawsDirection(Phantom *ph, Scenario *scen)
     chances[(ph->direction + 2) % 4] = 3;
 
     // Orders the chances of each direction
-    for(j = 0; j < 4; j++)
+    for (j = 0; j < 4; j++)
     {
         max = 0;
-        for(i = 0; i < 4; i++)
+        for (i = 0; i < 4; i++)
         {
-            if(chances[i] > max)
+            if (chances[i] > max)
             {
                 max = chances[i];
                 k = i;
@@ -767,46 +781,46 @@ static int phantom_DrawsDirection(Phantom *ph, Scenario *scen)
         chances[k] = 0;
     }
 
-    // Choses the first valid direction
+    // Chooses the first valid direction
     i = 0;
-    while(scen->map[ph->y + directions[dir[i]].y][ph->x + directions[dir[i]].x] > 2)
+    while (scen->map[ph->y + directions[dir[i]].y][ph->x + directions[dir[i]].x] > 2)
     {
         i++;
     }
     return dir[i];
 }
 
-
 // Function that groups all the cases of choice of direction of the phantom
-static int phantom_MovingPhantomAlive(Phantom *ph, Pacman *pac, Scenario *scen)
+static int phantom_MovingPhantomAlive(Phantom *ph, Pacman *pac, struct TScenario *scen)
 {
-    int d, i;
-    if(scenario_IsTurn(ph->x, ph->y, scen))
+    int d = 0;
+    int i;
+    if (scenario_IsTurn(ph->x, ph->y, scen))
     {
-        if(!ph->decided_turn)
+        if (!ph->decided_turn)
         {
-            // On turn if Pacman, then persue
+            // On turn if Pacman, then pursue
             d = -1;
-            for(i = 0; i < 4; i++)
+            for (i = 0; i < 4; i++)
             {
-                if(phantom_SeePacman(ph, pac, scen, i))
+                if (phantom_SeePacman(ph, pac, scen, i))
                 {
                     d = i;
                 }
             }
-            // Turn: Did not saw pacman, draw a direction
-            if(d == -1)
+            // Turn: Did not see pacman, draw a direction
+            if (d == -1)
             {
                 d = phantom_DrawsDirection(ph, scen);
             }
             else
             {
-                // Turn: saw pacman, but he is invencible
-                // The RUN THE FUCK OUT MAN!! kkkk, draws new direction
-                if(pacman_is_invencible(pac))
+                // Turn: saw pacman, but he is invincible
+                // The RUN THE F*** OUT MAN!! kkkk, draws new direction
+                if (pacman_is_invencible(pac))
                 {
                     i = d;
-                    while(i == d)
+                    while (i == d)
                     {
                         d = phantom_DrawsDirection(ph, scen);
                     }
@@ -824,17 +838,17 @@ static int phantom_MovingPhantomAlive(Phantom *ph, Pacman *pac, Scenario *scen)
         // There is no turn: keep the same path
         ph->decided_turn = 0;
         d = ph->direction;
-        if(pacman_is_invencible(pac))
+        if (pacman_is_invencible(pac))
         {
-            // If saw pacman ahead and he is invencible, go oposite way
-            if(phantom_SeePacman(ph, pac, scen, d))
+            // If saw pacman ahead and he is invincible, go opposite way
+            if (phantom_SeePacman(ph, pac, scen, d))
             {
                 d = (d + 2) % 4;
             }
         }
 
         // Invert direction
-        if(scen->map[ph->y + directions[d].y][ph->x + directions[d].x] > 2)
+        if (scen->map[ph->y + directions[d].y][ph->x + directions[d].x] > 2)
         {
             d = (d + 2) % 4;
         }
@@ -843,34 +857,34 @@ static int phantom_MovingPhantomAlive(Phantom *ph, Pacman *pac, Scenario *scen)
 }
 
 // Function that treats the cases where the phantom saw pacman
-static int phantom_SeePacman(Phantom *ph, Pacman *pac, Scenario *scen, int direction)
+static int phantom_SeePacman(Phantom *ph, Pacman *pac, struct TScenario *scen, int direction)
 {
     int continum = 0;
-    if(direction == 0 || direction == 2)
+    if (direction == 0 || direction == 2)
     {
-        if(pac->y == ph->y)
+        if (pac->y == ph->y)
         {
             continum = 1;
         }
     }
     else
     {
-        if(pac->x == ph->x)
+        if (pac->x == ph->x)
         {
             continum = 1;
         }
     }
 
-    if(continum)
+    if (continum)
     {
         int xt = ph->x;
         int yt = ph->y;
-        while(scen->map[yt + directions[direction].y][xt + directions[direction].x] <= 2)
+        while (scen->map[yt + directions[direction].y][xt + directions[direction].x] <= 2)
         {
             yt = yt + directions[direction].y;
             xt = xt + directions[direction].x;
 
-            if(xt == pac->x && yt == pac->y)
+            if (xt == pac->x && yt == pac->y)
             {
                 return 1;
             }
@@ -879,30 +893,29 @@ static int phantom_SeePacman(Phantom *ph, Pacman *pac, Scenario *scen, int direc
     return 0;
 }
 
-
-// Function that helps in search the best path when the phantom dies
-static void phantom_SearchBestPath(Phantom *ph, Scenario *scen)
+// Function that helps in searching the best path when the phantom dies
+static void phantom_SearchBestPath(Phantom *ph, struct TScenario *scen)
 {
-    int i, k, index_on;
+    int i, k, index_on = -1; // Initialize index_on to avoid uninitialized warning
     int continum, d;
     int *dist;
 
-    dist = malloc(scen->NV*sizeof(int));
-    if(ph->path == NULL)
+    dist = malloc(scen->NV * sizeof(int));
+    if (ph->path == NULL)
     {
-        ph->path = malloc(scen->NV*sizeof(int));
+        ph->path = malloc(scen->NV * sizeof(int));
     }
 
-    //Begin calculating best path...
-    for(i = 0; i<scen->NV; i++)
+    // Begin calculating best path...
+    for (i = 0; i < scen->NV; i++)
     {
         dist[i] = 10000;
         ph->path[i] = -1;
-        if(scen->graph[i].x == ph->xi && scen->graph[i].y == ph->yi)
+        if (scen->graph[i].x == ph->xi && scen->graph[i].y == ph->yi)
         {
             index_on = i;
         }
-        if(scen->graph[i].x == ph->x && scen->graph[i].y == ph->y)
+        if (scen->graph[i].x == ph->x && scen->graph[i].y == ph->y)
         {
             ph->actual_index = i;
         }
@@ -910,20 +923,19 @@ static void phantom_SearchBestPath(Phantom *ph, Scenario *scen)
 
     dist[index_on] = 0;
 
-
     // calculates best path...
     continum = 1;
     while (continum)
     {
         continum = 0;
-        for(i = 0; i < scen->NV; i++)
+        for (i = 0; i < scen->NV; i++)
         {
-            for(k = 0; k < 4; k++)
+            for (k = 0; k < 4; k++)
             {
-                if(scen->graph[i].neighbour[k] >= 0)
+                if (scen->graph[i].neighbour[k] >= 0)
                 {
                     d = phantom_DistanceGraph(scen, i, scen->graph[i].neighbour[k]);
-                    if(dist[scen->graph[i].neighbour[k]] > (dist[i] + d))
+                    if (dist[scen->graph[i].neighbour[k]] > (dist[i] + d))
                     {
                         dist[scen->graph[i].neighbour[k]] = (dist[i] + d);
                         ph->path[scen->graph[i].neighbour[k]] = i;
@@ -937,13 +949,13 @@ static void phantom_SearchBestPath(Phantom *ph, Scenario *scen)
 }
 
 // Function that helps choosing the path when the phantom dies
-static int phantom_MovingPhantomDead(Phantom *ph, Scenario *scen)
+static int phantom_MovingPhantomDead(Phantom *ph, struct TScenario *scen)
 {
-    int d;
+    int d = 0;
 
-    if(!ph->begin_turn)
+    if (!ph->begin_turn)
     {
-        if(scenario_IsTurn(ph->x, ph->y, scen))
+        if (scenario_IsTurn(ph->x, ph->y, scen))
         {
             ph->begin_turn = 1;
             phantom_SearchBestPath(ph, scen);
@@ -953,7 +965,7 @@ static int phantom_MovingPhantomDead(Phantom *ph, Scenario *scen)
         else
         {
             d = ph->direction;
-            if(scen->map[ph->y + directions[d].y][ph->x + directions[d].x] > 2) // Then wall
+            if (scen->map[ph->y + directions[d].y][ph->x + directions[d].x] > 2) // Then wall
             {
                 d = (d + 2) % 4;
             }
@@ -962,32 +974,23 @@ static int phantom_MovingPhantomDead(Phantom *ph, Scenario *scen)
     else
     {
         // Make path back
-        if(ph->x != ph->xi || ph->y != ph->yi)
+        if (ph->x != ph->xi || ph->y != ph->yi)
         {
-            if(scenario_IsTurn(ph->x, ph->y, scen))
+            if (scenario_IsTurn(ph->x, ph->y, scen))
             {
-                if(ph->decided_turn)
-                {
-                    d = ph->direction;
-                }
-                else
-                {
-                    //Checks the direction to take
-                    ph->actual_index = ph->path[ph->actual_index];
-                    d = phantom_DirectionGraph(ph, scen);
-                    ph->decided_turn = 1;
-                }
+                ph->begin_turn = 1;
+                phantom_SearchBestPath(ph, scen);
+                ph->decided_turn = 1;
+                d = phantom_DirectionGraph(ph, scen);
             }
             else
             {
                 d = ph->direction;
-                ph->decided_turn = 0;
+                if (scen->map[ph->y + directions[d].y][ph->x + directions[d].x] > 2) // Then wall
+                {
+                    d = (d + 2) % 4;
+                }
             }
-        }
-        else
-        {
-            ph->status = 0;
-            d = ph->direction;
         }
     }
     return d;

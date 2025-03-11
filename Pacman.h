@@ -1,3 +1,15 @@
+#ifndef PACMAN_H
+#define PACMAN_H
+
+
+// Declare texture variables as extern
+extern GLuint startscreen;
+extern GLuint screenGameOver;
+
+// Function declarations
+void drawTypeScreen(float x, float y, float size, GLuint tex);
+
+// Other existing declarations from Pacman.h...
 //Define the struts that will be used
 typedef struct TPacman Pacman;
 typedef struct TPhantom Phantom;
@@ -26,3 +38,6 @@ Phantom* phantom_create(int x, int y);
 void phantom_destroy(Phantom *ph);
 void phantom_moving(Phantom *ph, Scenario *scen, Pacman *pac);
 void phantom_draw(Phantom *ph);
+
+
+#endif // PACMAN_H
