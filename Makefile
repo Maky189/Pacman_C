@@ -1,18 +1,21 @@
 CC = gcc
-CFLAGS = -I. -I/usr/include -L/usr/lib -lglfw -ldl -lGL -lm
-SRC = main.c glad.c Pacman.c
-OBJ = $(SRC:.c=.o)
-EXEC = main
+CFLAGS = -I. -O2 -Wall -g
+LDFLAGS = -lglfw -ldl -lGL -lGLU -lm -lSOIL
+OBJS = main.o Pacman.o
 
-all: $(EXEC)
+all: main
 
-$(EXEC): $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+main: $(OBJS)
+	$(CC) -o main $(OBJS) $(LDFLAGS)
 
-%.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+main.o: main.c Pacman.h
+	$(CC) $(CFLAGS) -c main.c
+
+Pacman.o: Pacman.c Pacman.h
+	$(CC) $(CFLAGS) -c Pacman.c
 
 clean:
-	rm -f $(OBJ) $(EXEC)
+	rm -f main *.o
 
-.PHONY: all clean
+run: main
+	./main
