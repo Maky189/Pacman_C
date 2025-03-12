@@ -446,12 +446,14 @@ void pacman_moving(Pacman *pac, struct TScenario *scen)
     if (scen->map[pac->y][pac->x] == 1)
     {
         pac->score += 10;
+        scen->map[pac->y][pac->x] = 0; // Update the map to indicate the point has been eaten
         scen->number_p--;
     }
     if (scen->map[pac->y][pac->x] == 2)
     {
         pac->score += 50;
         pac->invencible = 1000;
+        scen->map[pac->y][pac->x] = 0; // Update the map to indicate the point has been eaten
         scen->number_p--;
     }
 }

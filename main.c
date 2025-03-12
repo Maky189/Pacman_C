@@ -7,6 +7,7 @@
 #include <string.h>
 #include <SOIL/SOIL.h>
 #include <time.h>
+#include <unistd.h>
 #include "Pacman.h"
 
 const unsigned int WIDTH = 800;
@@ -103,6 +104,8 @@ int main(void) {
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        usleep(6000);
     }
 
     endGame();
