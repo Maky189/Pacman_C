@@ -147,12 +147,10 @@ void drawGame() {
         return;
     }
     if (pacman_alive(pac)) {
-        printf("Pacman is alive and ready to play!\n");
         pacman_moving(pac, scen);
         pacman_draw(pac);
         for (int i = 0; i < 4; i++) {
             if (ph[i] != NULL) {
-                printf("Phantom %d is on the move!\n", i);
                 phantom_moving(ph[i], scen, pac);
                 phantom_draw(ph[i]);
             } else {
@@ -173,13 +171,11 @@ void beginGame() {
         exit(1);
     }
     pac = pacman_create(9, 11);
-    printf("Pacman created at position (9, 11)\n");
     if (pac == NULL) {
         printf("Error creating Pacman\n");
         exit(1);
     }
     for (int i = 0; i < 4; i++) {
-        printf("Creating phantom %d at position (9, 9)\n", i);
         ph[i] = phantom_create(9, 9);
         if (ph[i] == NULL) {
         printf("Error creating phantom %d\n", i);
@@ -197,7 +193,6 @@ void endGame() {
         }
     }
     if (pac != NULL) {
-        printf("Pacman is alive\n");
         pacman_destroy(pac);
         pac = NULL;
     }

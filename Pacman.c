@@ -189,7 +189,6 @@ struct TScenario* scenario_load(char *archive)
         fprintf(stderr, "Memory allocation failed for Scenario\n");
         exit(1);
     }
-    printf("Allocating memory for Scenario\n");
     scen->number_p = 0;
 
     for (i = 0; i < N; i++)
@@ -360,7 +359,6 @@ Pacman* pacman_create(int x, int y)
         fprintf(stderr, "Memory allocation failed for Pacman\n");
         exit(1);
     }
-    printf("Allocating memory for Pacman\n");
     if (pac != NULL)
     {
         pac->invencible = 0;
@@ -571,7 +569,6 @@ Phantom* phantom_create(int x, int y)
         fprintf(stderr, "Memory allocation failed for Phantom\n");
         exit(1);
     }
-    printf("Allocating memory for Phantom\n");
     if (ph != NULL)
     {
         ph->step = 3;
