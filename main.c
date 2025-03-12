@@ -1,11 +1,11 @@
 #define GLFW_INCLUDE_NONE
 #include <stdio.h>
 #include <stdlib.h>
-#include "GLFW/glfw3.h"
-#include "GL/gl.h"
-#include "GL/glu.h"
+#include <GL/gl.h> // Include GL/gl.h before GLFW/glfw3.h
+#include <GLFW/glfw3.h>
+#include <GL/glu.h>
 #include <string.h>
-#include "SOIL/SOIL.h"
+#include <SOIL/SOIL.h>
 #include <time.h>
 #include <unistd.h>
 #include "Pacman.h"
