@@ -73,24 +73,24 @@ void loadTextures()
     char str[50];
     for (i = 0; i < 12; i++)
     {
-        sprintf(str, ".//Sprites//phantom%d.png", i);
+        sprintf(str, ".//Textures//phantom%d.png", i);
         phantomTex2d[i] = loadArqTexture(str);
     }
 
     for (i = 0; i < 12; i++)
     {
-        sprintf(str, ".//Sprites//pacman%d.png", i);
+        sprintf(str, ".//Textures//pacman%d.png", i);
         pacmanTex2d[i] = loadArqTexture(str);
     }
 
     for(i = 0; i < 14; i++)
     {
-        sprintf(str, ".//Sprites//mapa%d.png", i);
+        sprintf(str, ".//Textures//mapa%d.png", i);
         mapTex2d[i] = loadArqTexture(str);
     }
 
-    startscreen = loadArqTexture(".//Sprites//start.png");
-    screenGameOver = loadArqTexture(".//Sprites//gameover.png");
+    startscreen = loadArqTexture(".//Textures//start.png");
+    screenGameOver = loadArqTexture(".//Textures//gameover.png");
 }
 
 static GLuint loadArqTexture(char *str)
