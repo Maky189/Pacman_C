@@ -165,7 +165,7 @@ void drawGame() {
 
 void beginGame() {
     srand(time(NULL));
-    scen = scenario_load("map.txt");
+    scen = scenario_load(".//Levels//map1.txt");
     if (scen == NULL) {
         printf("Failed to load the game scenario. Please check the map file.\n");
         exit(1);

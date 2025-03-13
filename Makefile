@@ -1,12 +1,12 @@
 CC = gcc
 CFLAGS = -I. -O2 -Wall -g
-LDFLAGS = -lglfw -ldl -lGL -lGLU -lm -lSOIL
+LDFLAGS = -lglfw -ldl -lGL -lGLU -lm -lSOIL -lSDL2 -lSDL2_mixer
 OBJS = main.o Pacman.o
 
 # Installation target for building and preparing the environment
 install:
 	sudo apt-get update
-	sudo apt-get install -y build-essential libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev libsoil-dev
+	sudo apt-get install -y build-essential libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev libsoil-dev libsdl2-dev libsdl2-mixer-dev
 
 all: main
 
