@@ -6,6 +6,8 @@
 #include <GL/glu.h>
 #include <string.h>
 #include <SOIL/SOIL.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #include <time.h>
 #include <unistd.h>
 #include "Pacman.h"
@@ -43,6 +45,8 @@ void loadTextures();
 void processInput(GLFWwindow *window);
 void drawTypeScreen(float x, float y, float size, GLuint tex); // Function declaration
 
+
+
 void initOpenGL() {
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
@@ -79,14 +83,16 @@ int main(void) {
     }
     glfwMakeContextCurrent(window);
     
-    const GLubyte* version = glGetString(GL_VERSION);
-    if (!version) {
-        fprintf(stderr, "Failed to get OpenGL version\n");
-        glfwDestroyWindow(window);
-        glfwTerminate();
+    if (SDL_Init(SDL_INIT_AUDIO) < 0)
+    {
+        printf("SDL_Init failed: %s\n", SDL_GetError());
         return -1;
     }
-    printf("OpenGL Version: %s\n", version);
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+    {
+        printf("Mix_OpenAudio failed: %s\n", Mix_GetError());
+        return -1;
+    }
 
     initOpenGL();
 
@@ -130,22 +136,22 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
         if (begin == 2) {
             endGame();
-            beginGame();
         }
         begin = 1;
+        Mix_HaltMusic(); // Stop the music when the game starts
     }
 }
 
 void drawGame() {
+    if (begin == 0) {
+        draw_Window(0);
+        return;
+    }
     if (scen == NULL) {
         printf("Scenario is NULL\n");
         return;
     }
     scenario_draw(scen);
-    if (begin == 0) {
-        draw_Window(0);
-        return;
-    }
     if (pacman_alive(pac)) {
         pacman_moving(pac, scen);
         pacman_draw(pac);
@@ -170,6 +176,16 @@ void beginGame() {
         printf("Failed to load the game scenario. Please check the map file.\n");
         exit(1);
     }
+    Mix_Music *start = Mix_LoadMUS(".//Sounds//start.mp3");
+    if (start == NULL) {
+        printf("Mix_LoadMUS failed: %s\n", Mix_GetError());
+        exit(1);
+    }
+    if (Mix_PlayMusic(start, -1) == -1) {
+        printf("Mix_PlayMusic failed: %s\n", Mix_GetError());
+        exit(1);
+    }
+    SDL_Delay(1000);
     pac = pacman_create(9, 11);
     if (pac == NULL) {
         printf("Error creating Pacman\n");
@@ -178,8 +194,8 @@ void beginGame() {
     for (int i = 0; i < 4; i++) {
         ph[i] = phantom_create(9, 9);
         if (ph[i] == NULL) {
-        printf("Error creating phantom %d\n", i);
-        exit(1);
+            printf("Error creating phantom %d\n", i);
+            exit(1);
         }
     }
     begin = 0;

@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <SOIL/SOIL.h>
 #include "Pacman.h"
+#include <SDL2/SDL_mixer.h> // Add SDL_mixer header
 
 // Size of each block of the table
 #define block 70
@@ -55,12 +56,15 @@ struct TScenario {
     struct TVertex *graph;
 };
 
-// Textures
+// Textures and sounds
 GLuint pacmanTex2d[12];
 GLuint phantomTex2d[12];
 GLuint mapTex2d[14];
-
-GLuint startscreen, screenGameOver;
+GLuint startscreen, screenGameOver, background; // Add background texture
+Mix_Chunk *movingSound = NULL; // Change to Mix_Chunk for playing on a specific channel
+Mix_Chunk *phantomMovingSound = NULL; // Change to Mix_Chunk for playing on a specific channel
+Mix_Chunk *pointSound = NULL; // Add point sound
+Mix_Chunk *panicSound = NULL; // Add panic sound
 
 static void drawSprite(float column, float line, GLuint tex);
 static GLuint loadArqTexture(char *str);
@@ -91,6 +95,35 @@ void loadTextures()
 
     startscreen = loadArqTexture(".//Textures//start.png");
     screenGameOver = loadArqTexture(".//Textures//gameover.png");
+    background = loadArqTexture(".//Textures//screen.jpg"); // Load background texture
+
+    // Load moving sound
+    movingSound = Mix_LoadWAV(".//Sounds//moving.mp3");
+    if (movingSound == NULL) {
+        printf("Mix_LoadWAV failed: %s\n", Mix_GetError());
+        exit(1);
+    }
+
+    // Load phantom moving sound
+    phantomMovingSound = Mix_LoadWAV(".//Sounds//phantom_moving.mp3");
+    if (phantomMovingSound == NULL) {
+        printf("Mix_LoadWAV failed: %s\n", Mix_GetError());
+        exit(1);
+    }
+
+    // Load point sound
+    pointSound = Mix_LoadWAV(".//Sounds//point.mp3");
+    if (pointSound == NULL) {
+        printf("Mix_LoadWAV failed: %s\n", Mix_GetError());
+        exit(1);
+    }
+
+    // Load panic sound
+    panicSound = Mix_LoadWAV(".//Sounds//panic.mp3");
+    if (panicSound == NULL) {
+        printf("Mix_LoadWAV failed: %s\n", Mix_GetError());
+        exit(1);
+    }
 }
 
 static GLuint loadArqTexture(char *str)
@@ -137,12 +170,23 @@ void drawSprite(float column, float line, GLuint tex)
 
 void drawTypeScreen(float x, float y, float size, GLuint tex)
 {
+    // Draw background first
     glColor3f(1.0, 1.0, 1.0);
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindTexture(GL_TEXTURE_2D, background);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, 1.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, 1.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, -1.0f);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
+    glEnd();
+
+    // Draw the actual screen on top
+    glBindTexture(GL_TEXTURE_2D, tex);
 
     glBegin(GL_QUADS);
         glTexCoord2f(0.0f, 1.0f); glVertex2f(x - size, y + size);
@@ -351,6 +395,9 @@ static void pacman_dies(Pacman *pac);
 static void pacman_scores_ghosts(Pacman *pac);
 static void pacman_deathanimation(float column, float line, Pacman *pac);
 
+// Add a static variable to keep track of the time since the last point was eaten
+static int timeSinceLastPoint = 0;
+
 // Functions that begin pacman's data
 Pacman* pacman_create(int x, int y)
 {
@@ -441,18 +488,39 @@ void pacman_moving(Pacman *pac, struct TScenario *scen)
     }
 
     // Eats a point in the map
-    if (scen->map[pac->y][pac->x] == 1)
+    if (scen->map[pac->y][pac->x] == 1 || scen->map[pac->y][pac->x] == 2)
     {
-        pac->score += 10;
+        if (Mix_Playing(0) == 0) { // Use channel 0 for Pacman moving sound
+            if (Mix_PlayChannel(0, movingSound, -1) == -1) {
+                printf("Mix_PlayChannel failed: %s\n", Mix_GetError());
+            }
+        }
+
+        if (scen->map[pac->y][pac->x] == 1) {
+            pac->score += 10;
+        } else if (scen->map[pac->y][pac->x] == 2) {
+            pac->score += 50;
+            pac->invencible = 1000;
+            // Play the point sound
+            if (Mix_PlayChannel(-1, pointSound, 0) == -1) {
+                printf("Mix_PlayChannel failed: %s\n", Mix_GetError());
+            }
+            // Stop phantom moving sound and play panic sound
+            Mix_HaltChannel(1);
+            if (Mix_PlayChannel(1, panicSound, -1) == -1) {
+                printf("Mix_PlayChannel failed: %s\n", Mix_GetError());
+            }
+        }
         scen->map[pac->y][pac->x] = 0; // Update the map to indicate the point has been eaten
         scen->number_p--;
-    }
-    if (scen->map[pac->y][pac->x] == 2)
-    {
-        pac->score += 50;
-        pac->invencible = 1000;
-        scen->map[pac->y][pac->x] = 0; // Update the map to indicate the point has been eaten
-        scen->number_p--;
+        timeSinceLastPoint = 0; // Reset the timer since Pacman ate a point
+    } else {
+        timeSinceLastPoint++;
+        if (timeSinceLastPoint > 100) { // Adjust the threshold as needed
+            if (Mix_Playing(0) != 0) {
+                Mix_HaltChannel(0); // Stop the music if Pacman is not eating points
+            }
+        }
     }
 }
 
@@ -635,10 +703,24 @@ void phantom_moving(Phantom *ph, struct TScenario *scen, Pacman *pac)
         if (pacman_is_invencible(pac))
         {
             ph->status = 2;
+            // Stop phantom moving sound and play panic sound
+            if (Mix_Playing(1) != 0 && Mix_GetChunk(1) == phantomMovingSound) {
+                Mix_HaltChannel(1);
+                if (Mix_PlayChannel(1, panicSound, -1) == -1) {
+                    printf("Mix_PlayChannel failed: %s\n", Mix_GetError());
+                }
+            }
         }
         else
         {
             ph->status = 0;
+            // Resume phantom moving sound if panic sound was playing
+            if (Mix_Playing(1) != 0 && Mix_GetChunk(1) == panicSound) {
+                Mix_HaltChannel(1);
+                if (Mix_PlayChannel(1, phantomMovingSound, -1) == -1) {
+                    printf("Mix_PlayChannel failed: %s\n", Mix_GetError());
+                }
+            }
         }
 
         // Calls the function that calculates the new direction to where the phantom
@@ -665,6 +747,13 @@ void phantom_moving(Phantom *ph, struct TScenario *scen, Pacman *pac)
     }
     // Moving and drawing the phantom on screen
     phantom_move(ph, d, scen);
+
+    // Play the phantom moving sound if not invincible
+    if (!pacman_is_invencible(pac) && Mix_Playing(1) == 0) { // Use channel 1 for phantom moving sound
+        if (Mix_PlayChannel(1, phantomMovingSound, -1) == -1) {
+            printf("Mix_PlayChannel failed: %s\n", Mix_GetError());
+        }
+    }
 }
 
 // Updates the position of a phantom
@@ -713,6 +802,13 @@ static void phantom_move(Phantom *ph, int direction, struct TScenario *scen)
     if (xt != ph->x || yt != ph->y)
     {
         ph->decided_turn = 0;
+    }
+
+    // Play the phantom moving sound
+    if (Mix_Playing(1) == 0) { // Use channel 1 for phantom moving sound
+        if (Mix_PlayChannel(1, phantomMovingSound, -1) == -1) {
+            printf("Mix_PlayChannel failed: %s\n", Mix_GetError());
+        }
     }
 }
 

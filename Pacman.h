@@ -5,6 +5,7 @@
 // Declare texture variables as extern
 extern GLuint startscreen;
 extern GLuint screenGameOver;
+extern GLuint background; // New background texture
 
 // Function declarations
 void drawTypeScreen(float x, float y, float size, GLuint tex);
