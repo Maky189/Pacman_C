@@ -15,7 +15,7 @@ void drawTypeScreen(float x, float y, float size, GLuint tex);
 typedef struct TPacman Pacman;
 typedef struct TPhantom Phantom;
 typedef struct TScenario Scenario;
-#define N 20 // Add this definition
+#define N 40 // Add this definition
 
 void loadTextures();
 void initOpenGL(); // Add this declaration

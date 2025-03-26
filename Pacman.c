@@ -11,7 +11,7 @@
 // Size of each block of the table
 #define block 70
 // Size of the table
-#define N 20
+#define N 40
 //Size of each block of the table in the window
 #define TAM 0.1f
 //Functions that convert the line and column of the table in a coordinate
