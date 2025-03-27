@@ -2,9 +2,9 @@
 
 This is a simple implementation of the classic Pacman game using C and OpenGL. The game features basic gameplay mechanics, including Pacman moving through a maze, collecting points, and avoiding ghosts.
 
-![](Textures/screen.jpg)
+![](Textures/screen.jpg){ width = 300}
 
-![](Textures/Pacman.png)
+![](Textures/Pacman.png) {width = 300}
 
 ## Features
 
