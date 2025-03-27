@@ -2,6 +2,10 @@
 
 This is a simple implementation of the classic Pacman game using C and OpenGL. The game features basic gameplay mechanics, including Pacman moving through a maze, collecting points, and avoiding ghosts.
 
+![](Textures/screen.jpg)
+
+![](Textures/Pacman.png)
+
 ## Features
 
 - Pacman can move in four directions: up, down, left, and right.
@@ -106,5 +110,6 @@ ls /usr/include/SOIL  # SOIL headers
 
 ## Acknowledgements
 
+- Used open source assets in github.
 - The game uses the Simple OpenGL Image Library (SOIL) for loading textures.
 - The game is inspired by the classic Pacman game developed by Namco.

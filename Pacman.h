@@ -1,6 +1,7 @@
 #ifndef PACMAN_H
 #define PACMAN_H
 
+#include <GL/gl.h> // Add this include for GLuint
 
 // Declare texture variables as extern
 extern GLuint startscreen;
@@ -15,7 +16,7 @@ void drawTypeScreen(float x, float y, float size, GLuint tex);
 typedef struct TPacman Pacman;
 typedef struct TPhantom Phantom;
 typedef struct TScenario Scenario;
-#define N 40 // Add this definition
+#define N 20 // Add this definition
 
 void loadTextures();
 void initOpenGL(); // Add this declaration
